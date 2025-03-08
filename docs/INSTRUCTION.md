@@ -1,5 +1,3 @@
-# A100服务器安装openpcdet
-
 ## 简介
 `OpenPCDet` is a clear, simple, self-contained open source project for LiDAR-based 3D object detection.
 
@@ -48,3 +46,36 @@ pip install -r requirements.txt
 ```bash
 python setup.py develop
 ```
+
+
+## 训练模型
+可以选择添加额外的命令行参数`--batch_size ${BATCH_SIZE}` 和 `--epochs ${EPOCHS}`
+
+*You could optionally add extra command line parameters `--batch_size ${BATCH_SIZE}` and `--epochs ${EPOCHS}` to specify your preferred parameters.*
+
+- Train with multiple GPUs or multiple machines
+
+```shell
+sh scripts/dist_train.sh ${NUM_GPUS} --cfg_file ${CONFIG_FILE}
+# e.g.
+sh scripts/dist_train.sh 2 --cfg_file cfgs/kitti_models/centerpoint.yaml
+# or 
+
+sh scripts/slurm_train.sh ${PARTITION} ${JOB_NAME} ${NUM_GPUS} --cfg_file ${CONFIG_FILE}
+```
+
+- Train with a single GPU:
+
+```shell
+python train.py --cfg_file ${CONFIG_FILE}
+# e.g.
+python train.py --cfg_file cfgs/kitti_models/centerpoint.yaml
+```
+
+
+## Debug集合
+### 训练时出现ModuleNotFoundError: No module named 'av2
+原因：需要下载Argoverse2数据集
+解决：可以不下载，而是将`OpenPCDet/pcdet/datasets/init. py`文件中的下面两行代码注释掉
+- "from. argo2. argo2 dataset import Argo2Dataset" 
+- "Argo2Dataset': Argo2Dataset "

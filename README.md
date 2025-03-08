@@ -22,6 +22,8 @@
 ## 📝 Table of Contents
 
 - [About](#about)
+- [Prerequisites & Installing](#prerequisites--installing)
+- [Getting Started](#getting_started)
 <!-- - [Getting Started](#getting_started)
 - [Deployment](#deployment)
 - [Usage](#usage)
@@ -36,17 +38,18 @@
 A code repository forked from openpcdet, I use it for my research and practice.
 I will record my experiments about LiDAR point cloud object detection here.
 
-<!-- ## 🏁 Getting Started <a name = "getting_started"></a>
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system. -->
 
-### Prerequisites
+## Prerequisites & Installing
 
-See [official document](./docs/INSTALL.md) or [my_own_install.md](./docs/my_own_install.md).
+See [official document](./docs/INSTALL.md) or [INSTRUCTION.md](./docs/INSTRUCTION.md).
 
-### Installing
 
-You can follow the [official document](./docs/INSTALL.md) or follow [my_own_install.md](./docs/my_own_install.md).
+## 🏁 Getting Started <a name = "getting_started"></a>
+Just see [INSTRUCTION.md](./docs/INSTRUCTION.md).
+
+<!-- These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See [deployment](#deployment) for notes on how to deploy the project on a live system. -->
+
 
 <!-- ## 🔧 Running the tests <a name = "tests"></a>
 
