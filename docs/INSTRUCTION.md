@@ -79,3 +79,10 @@ python train.py --cfg_file cfgs/kitti_models/centerpoint.yaml
 解决：可以不下载，而是将`OpenPCDet/pcdet/datasets/init. py`文件中的下面两行代码注释掉
 - "from. argo2. argo2 dataset import Argo2Dataset" 
 - "Argo2Dataset': Argo2Dataset "
+
+参考:https://github.com/open-mmlab/OpenPCDet/issues/1328#issuecomment-1546529541
+### 训练时会有/bin/sh: line 1: gpustat: command not found 的报错
+原因：gpustat是python的一个包，缺少该包
+解决：pip安装即可
+(还未安装)
+参考:https://blog.csdn.net/qq_29304033/article/details/123734119
