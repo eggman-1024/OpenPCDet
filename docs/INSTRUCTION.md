@@ -86,5 +86,7 @@ python train.py --cfg_file cfgs/kitti_models/centerpoint.yaml
 原因：gpustat是python的一个包，缺少该包
 
 解决：pip安装即可
-(还未安装)
+```bash
+pip install gpustat
+```
 参考:https://blog.csdn.net/qq_29304033/article/details/123734119
