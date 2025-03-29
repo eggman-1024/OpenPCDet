@@ -1,5 +1,5 @@
-DATASET: 'WaymoDataset'
-DATA_PATH: '../data/waymo'
+DATASET: 'Kitti2WaymoDataset'
+DATA_PATH: '/home/public/zrtdata/carla360_waymo'
 PROCESSED_DATA_TAG: 'waymo_processed_data_v0_5_0'
 
 POINT_CLOUD_RANGE: [-75.2, -75.2, -2, 75.2, 75.2, 4]
