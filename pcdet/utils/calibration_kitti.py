@@ -49,8 +49,8 @@ class Calibration(object):
 
     def rect_to_lidar(self, pts_rect):
         """
-        :param pts_lidar: (N, 3)
-        :return pts_rect: (N, 3)
+        :param pts_rect: (N, 3)
+        :return pts_lidar: (N, 3)
         """
         pts_rect_hom = self.cart_to_hom(pts_rect)  # (N, 4)
         R0_ext = np.hstack((self.R0, np.zeros((3, 1), dtype=np.float32)))  # (3, 4)

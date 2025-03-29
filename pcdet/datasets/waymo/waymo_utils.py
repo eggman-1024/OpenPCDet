@@ -193,8 +193,22 @@ def save_lidar_points(frame, cur_save_path, use_two_returns=True):
     # print('saving to ', cur_save_path)
     return num_points_of_each_lidar
 
+'''process_single_sequence
+用于处理 Waymo 数据集中的单个序列文件，并将处理后的信息保存到指定路径。具体步骤如下：
 
+获取序列名称并检查文件是否存在。
+创建 TFRecord 数据集对象。
+创建保存目录和 pkl 文件路径。
+如果 pkl 文件已存在且不需要更新信息，则直接返回已有的信息。
+遍历数据集中的每一帧数据，根据采样间隔跳过部分帧。
+解析帧数据，构建点云信息、帧 ID、元数据、图像信息和位姿信息。
+如果有标签，生成标签信息。
+如果只更新信息且已有信息存在，直接使用旧的信息，否则保存激光雷达点云数据。
+将处理后的信息保存到 pkl 文件中。
+返回处理后的序列信息。
+'''
 def process_single_sequence(sequence_file, save_path, sampled_interval, has_label=True, use_two_returns=True, update_info_only=False):
+    # e.g. segment-10455472356147194054_1560_000_1580_000_with_camera_labels
     sequence_name = os.path.splitext(os.path.basename(sequence_file))[0]
 
     # print('Load record (sampled_interval=%d): %s' % (sampled_interval, sequence_name))

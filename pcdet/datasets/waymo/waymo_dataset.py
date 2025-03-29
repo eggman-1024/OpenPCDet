@@ -46,6 +46,7 @@ class WaymoDataset(DatasetTemplate):
             self.pred_boxes_dict = {}
 
     def set_split(self, split):
+        # 重新初始化数据集对象，确保在切换分割时，数据集对象的基础属性（如配置、类别、路径等）被正确设置
         super().__init__(
             dataset_cfg=self.dataset_cfg, class_names=self.class_names, training=self.training,
             root_path=self.root_path, logger=self.logger
@@ -62,6 +63,7 @@ class WaymoDataset(DatasetTemplate):
         seq_name_to_infos = {}
 
         num_skipped_infos = 0
+        # 处理每一段数据
         for k in range(len(self.sample_sequence_list)):
             sequence_name = os.path.splitext(self.sample_sequence_list[k])[0]
             info_path = self.data_path / sequence_name / ('%s.pkl' % sequence_name)
@@ -155,6 +157,7 @@ class WaymoDataset(DatasetTemplate):
             dist.barrier()
         self.logger.info('Training data has been deleted from shared memory')
 
+    # 确保文件路径正确并存在。它会尝试通过不同的命名规则或版本修正路径，找到实际存在的文件
     @staticmethod
     def check_sequence_name_with_all_version(sequence_file):
         if not sequence_file.exists():
@@ -200,6 +203,7 @@ class WaymoDataset(DatasetTemplate):
         points_all, NLZ_flag = point_features[:, 0:5], point_features[:, 5]
         if not self.dataset_cfg.get('DISABLE_NLZ_FLAG_ON_POINTS', False):
             points_all = points_all[NLZ_flag == -1]
+        # 对点云特征进行非线性变换，未指定维度，则对第 4 列（intensity）应用 tanh 函数
         if self.dataset_cfg.get('POINTS_TANH_DIM', None) is None:
             points_all[:, 3] = np.tanh(points_all[:, 3])
         else:
@@ -294,14 +298,19 @@ class WaymoDataset(DatasetTemplate):
 
         sequence_info = self.seq_name_to_infos[sequence_name]
 
+        # 遍历历史帧索引
         for idx, sample_idx_pre in enumerate(sample_idx_pre_list):
 
+            # 加载点云数据和位姿信息
             points_pre = self.get_lidar(sequence_name, sample_idx_pre)
             pose_pre = sequence_info[sample_idx_pre]['pose'].reshape((4, 4))
-            expand_points_pre = np.concatenate([points_pre[:, :3], np.ones((points_pre.shape[0], 1))], axis=-1)
+            expand_points_pre = np.concatenate([points_pre[:, :3], np.ones((points_pre.shape[0], 1))], axis=-1) # 转换为齐次矩阵
+            # 从局部坐标系转换到全局坐标系
             points_pre_global = np.dot(expand_points_pre, pose_pre.T)[:, :3]
             expand_points_pre_global = np.concatenate([points_pre_global, np.ones((points_pre_global.shape[0], 1))], axis=-1)
+            # 从全局坐标系转换到当前帧的局部坐标系
             points_pre2cur = np.dot(expand_points_pre_global, np.linalg.inv(pose_cur.T))[:, :3]
+            # 拼接其他特征
             points_pre = np.concatenate([points_pre2cur, points_pre[:, 3:]], axis=-1)
             if sequence_cfg.get('ONEHOT_TIMESTAMP', False):
                 onehot_vector = np.zeros((points_pre.shape[0], len(sample_idx_pre_list) + 1))
@@ -390,6 +399,7 @@ class WaymoDataset(DatasetTemplate):
             else:
                 gt_boxes_lidar = gt_boxes_lidar[:, 0:7]
 
+            # 过滤空边界框
             if self.training and self.dataset_cfg.get('FILTER_EMPTY_BOXES_FOR_TRAIN', False):
                 mask = (annos['num_points_in_gt'] > 0)  # filter empty boxes
                 annos['name'] = annos['name'][mask]
@@ -403,7 +413,7 @@ class WaymoDataset(DatasetTemplate):
             })
 
         data_dict = self.prepare_data(data_dict=input_dict)
-        data_dict['metadata'] = info.get('metadata', info['frame_id'])
+        data_dict['metadata'] = info.get('metadata', info['frame_id'])  # 优先使用 info['metadata']，如果不存在，则使用 info['frame_id'] 作为默认值
         data_dict.pop('num_points_in_gt', None)
         return data_dict
 
@@ -503,6 +513,11 @@ class WaymoDataset(DatasetTemplate):
             difficulty = annos['difficulty']
             gt_boxes = annos['gt_boxes_lidar']
 
+            """
+            按帧索引过滤目标类别：
+            每隔 4 帧，移除 Vehicle 类别的目标。
+            每隔 2 帧，移除 Pedestrian 类别的目标
+            """
             if k % 4 != 0 and len(names) > 0:
                 mask = (names == 'Vehicle')
                 names = names[~mask]
@@ -518,12 +533,14 @@ class WaymoDataset(DatasetTemplate):
             num_obj = gt_boxes.shape[0]
             if num_obj == 0:
                 continue
-
+            
+            # 判断点云中的每个点是否位于给定的 3D 边界框内，并返回每个点所属的边界框索引(不在任何边界框内的点索引为 -1)
             box_idxs_of_pts = roiaware_pool3d_utils.points_in_boxes_gpu(
                 torch.from_numpy(points[:, 0:3]).unsqueeze(dim=0).float().cuda(),
                 torch.from_numpy(gt_boxes[:, 0:7]).unsqueeze(dim=0).float().cuda()
             ).long().squeeze(dim=0).cpu().numpy()
 
+            # 遍历每个gt物体
             for i in range(num_obj):
                 filename = '%s_%04d_%s_%d.bin' % (sequence_name, sample_idx, names[i], i)
                 filepath = database_save_path / filename
@@ -553,6 +570,7 @@ class WaymoDataset(DatasetTemplate):
         for k, v in all_db_infos.items():
             print('Database %s: %d' % (k, len(v)))
 
+        # pickle文件按name类别保存所有的gt信息(e.g. Vehicle, Pedestrian, Cyclist)
         with open(db_info_save_path, 'wb') as f:
             pickle.dump(all_db_infos, f)
 
@@ -711,7 +729,7 @@ def create_waymo_infos(dataset_cfg, class_names, data_path, save_path,
     train_filename = save_path / ('%s_infos_%s.pkl' % (processed_data_tag, train_split))
     val_filename = save_path / ('%s_infos_%s.pkl' % (processed_data_tag, val_split))
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+    os.environ["CUDA_VISIBLE_DEVICES"] = "-1"   # 禁用GPU，因为数据预处理是I/O密集型任务，不需要GPU
     print('---------------Start to generate data infos---------------')
 
     dataset.set_split(train_split)
@@ -783,13 +801,14 @@ if __name__ == '__main__':
     parser.add_argument('--cfg_file', type=str, default=None, help='specify the config of dataset')
     parser.add_argument('--func', type=str, default='create_waymo_infos', help='')
     parser.add_argument('--processed_data_tag', type=str, default='waymo_processed_data_v0_5_0', help='')
-    parser.add_argument('--update_info_only', action='store_true', default=False, help='')
+    parser.add_argument('--update_info_only', action='store_true', default=False, help='')  # 是否只更新数据集信息文件
     parser.add_argument('--use_parallel', action='store_true', default=False, help='')
     parser.add_argument('--wo_crop_gt_with_tail', action='store_true', default=False, help='')
 
     args = parser.parse_args()
 
-    ROOT_DIR = (Path(__file__).resolve().parent / '../../../').resolve()
+    # ROOT_DIR = (Path(__file__).resolve().parent / '../../../').resolve()
+    ROOT_DIR = Path('/home/public/zrtdata')
 
     if args.func == 'create_waymo_infos':
         try:
@@ -801,8 +820,8 @@ if __name__ == '__main__':
         create_waymo_infos(
             dataset_cfg=dataset_cfg,
             class_names=['Vehicle', 'Pedestrian', 'Cyclist'],
-            data_path=ROOT_DIR / 'data' / 'waymo',
-            save_path=ROOT_DIR / 'data' / 'waymo',
+            data_path=ROOT_DIR / 'waymo',
+            save_path=ROOT_DIR / 'waymo',
             raw_data_tag='raw_data',
             processed_data_tag=args.processed_data_tag,
             update_info_only=args.update_info_only
@@ -817,8 +836,8 @@ if __name__ == '__main__':
         create_waymo_gt_database(
             dataset_cfg=dataset_cfg,
             class_names=['Vehicle', 'Pedestrian', 'Cyclist'],
-            data_path=ROOT_DIR / 'data' / 'waymo',
-            save_path=ROOT_DIR / 'data' / 'waymo',
+            data_path=ROOT_DIR / 'waymo',
+            save_path=ROOT_DIR / 'waymo',
             processed_data_tag=args.processed_data_tag,
             use_parallel=args.use_parallel, 
             crop_gt_with_tail=not args.wo_crop_gt_with_tail

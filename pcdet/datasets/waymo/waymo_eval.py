@@ -42,8 +42,10 @@ class OpenPCDetWaymoDetectionMetricsEstimator(tf.test.TestCase):
                 box_mask = np.array([n in class_names for n in info['name']], dtype=np.bool_)
                 if 'num_points_in_gt' in info:
                     zero_difficulty_mask = info['difficulty'] == 0
+                    # 点数大于 5 且难度为 0 的目标，调整为难度 1；点数小于等于 5 且难度为 0 的目标，调整为难度 2
                     info['difficulty'][(info['num_points_in_gt'] > 5) & zero_difficulty_mask] = 1
                     info['difficulty'][(info['num_points_in_gt'] <= 5) & zero_difficulty_mask] = 2
+                    # 移除点数为 0 的目标
                     nonzero_mask = info['num_points_in_gt'] > 0
                     box_mask = box_mask & nonzero_mask
                 else:
@@ -74,6 +76,7 @@ class OpenPCDetWaymoDetectionMetricsEstimator(tf.test.TestCase):
                     boxes3d[-1] = boxes3d[-1][:, 0:7]
 
             obj_type += [self.WAYMO_CLASSES.index(name) for i, name in enumerate(box_name)]
+            # 记录每个边界框所属的帧索引
             frame_id.append(np.array([frame_index] * num_boxes))
             overlap_nlz.append(np.zeros(num_boxes))  # set zero currently
 
